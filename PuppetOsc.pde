@@ -12,6 +12,7 @@ int sD = 700;
 
 boolean debug = false;
 boolean hideCursor = true;
+boolean alphaMode = true;
 
 // A reference to our box2d world
 PBox2D box2d;
@@ -74,6 +75,7 @@ void setup() {
       // Create the empty list
       particles = new ArrayList();
       setupGl();
+      background(0);
 }
 
 void drawBone(float joint1[], float joint2[]) {
@@ -95,12 +97,20 @@ void drawBone(float joint1[], float joint2[]) {
 
 
 void draw() {
-  background(0);
+  //background(0);
   drawGl();
 }
 
 void drawMain(){
-  noStroke(); 
+  if(alphaMode){
+    noStroke();
+    fill(0,50);
+    rectMode(CORNER);
+    rect(0,0,width,height);
+  }else{
+    background(0);
+  }
+  
   for (Skeleton s: skels.values()) {
     s.addCollisionLine();
   

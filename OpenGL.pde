@@ -38,6 +38,9 @@ void setupGl(){ //goes LAST in setup
  pgl = (PGraphicsOpenGL) g;
   gl = pgl.gl;
   gl.setSwapInterval(1); //set vertical sync on
+  gl.glDisable(GL.GL_DEPTH_TEST);
+  gl.glEnable(GL.GL_BLEND);  // Turn on the blend mode
+  gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE);
 }
 
 void drawGl(){ //goes FIRST in draw
@@ -52,15 +55,15 @@ void drawGl(){ //goes FIRST in draw
  float fx = constrain(float(mouseX) / width, 0.01, 1);
  float fy = float(mouseY) / height;  
 //--
-  fx = random(0.01,0.011);
-  fy = random(0.4,0.6);
+  fx = random(0.01,0.015);
+  fy = random(0.3,0.4);
   println(fx + " " + fy);
 
  
    srcTex = offscreen.getTexture();
 
   offscreen.beginDraw();
-   offscreen.background(0);
+   //offscreen.background(0);
        
    /*
    cam.circle(radians(noise(millis()*2)*noise(millis())*50));    
