@@ -37,6 +37,7 @@ void setupGl(){ //goes LAST in setup
  offscreen = new GLGraphicsOffScreen(this, width, height, true, 4);  
  pgl = (PGraphicsOpenGL) g;
   gl = pgl.gl;
+  gl.setSwapInterval(1); //set vertical sync on
 }
 
 void drawGl(){ //goes FIRST in draw

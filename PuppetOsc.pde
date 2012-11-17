@@ -11,6 +11,7 @@ int sH = 600;
 int sD = 700;
 
 boolean debug = false;
+boolean hideCursor = true;
 
 // A reference to our box2d world
 PBox2D box2d;
@@ -33,7 +34,8 @@ Torso torso;
 Hashtable<Integer, Skeleton> skels = new Hashtable<Integer, Skeleton>();
 
 void setup() {
-    hint( ENABLE_OPENGL_4X_SMOOTH );  
+    hint( ENABLE_OPENGL_4X_SMOOTH );
+    if(hideCursor) noCursor();  
     size(sW,sH,GLConstants.GLGRAPHICS);    // use OPENGL rendering for bilinear filtering on texture
     smooth();
     head = new AnimSprite("horsebuyer",12);
