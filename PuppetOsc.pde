@@ -1,12 +1,16 @@
 //based on Stickmanetic by ?
 import processing.opengl.*;
 import ddf.minim.*;
-import oscP5.*;
-import netP5.*;
 import pbox2d.*;
 import org.jbox2d.collision.shapes.*;
 import org.jbox2d.common.*;
 import org.jbox2d.dynamics.*;
+
+int sW = 800;
+int sH = 600;
+int sD = 700;
+
+boolean debug = false;
 
 // A reference to our box2d world
 PBox2D box2d;
@@ -14,183 +18,61 @@ PBox2D box2d;
 // An ArrayList of particles that will fall on the surface
 ArrayList particles;
   
-OscP5 oscP5;
-
 float noiseIter = 0.0;
 int ballSize = 10;
 
 Minim minim;
 AudioInput adc;
 
-Sprite anim;
+AnimSprite head;
+
+Arm[] arm = new Arm[4];
+Leg[] leg = new Leg[4];
+Torso torso;
 
 Hashtable<Integer, Skeleton> skels = new Hashtable<Integer, Skeleton>();
 
 void setup() {
-    size(800,600,OPENGL);    // use OPENGL rendering for bilinear filtering on texture
+    hint( ENABLE_OPENGL_4X_SMOOTH );  
+    size(sW,sH,GLConstants.GLGRAPHICS);    // use OPENGL rendering for bilinear filtering on texture
     smooth();
-    anim = new Sprite("horsebuyer",3,false,0,0,0,0);
-    anim.play = false;
-    oscP5 = new OscP5(this, "127.0.0.1", 61863);
+    head = new AnimSprite("horsebuyer",12);
+    head.playing = false;
+    head.s = new PVector(0.8,0.8);
+    oscSetup();
     minim = new Minim(this);
     adc = minim.getLineIn( Minim.MONO, 512 );
-  
-    // Initialize box2d physics and create the world
-  box2d = new PBox2D(this);
-  box2d.createWorld();
-  // We are setting a custom gravity
-  box2d.setGravity(0, -40);
+    Arm armInit = new Arm();
+    Leg legInit = new Leg();
+    for(int i=0;i<arm.length;i++){
+      arm[i] = new Arm(armInit.frames);
+      arm[i].makeTexture();
+      //arm[i].debug = true;
+      arm[i].p = new PVector(320,240,0);
+      arm[i].index = int(random(arm[i].frames.length));
+    }
 
-  // Create the empty list
-  particles = new ArrayList();
+    for(int i=0;i<leg.length;i++){
+      leg[i] = new Leg(legInit.frames);
+      leg[i].makeTexture();
+      //leg[i].debug = true;
+      leg[i].p = new PVector(320,240,0);
+      leg[i].index = int(random(leg[i].frames.length));
+    }    
+      torso = new Torso();
+      torso.makeTexture();
+      //torso.debug = true;
+      torso.p = new PVector(320,240,0);
+      // Initialize box2d physics and create the world
+      box2d = new PBox2D(this);
+      box2d.createWorld();
+      // We are setting a custom gravity
+      box2d.setGravity(0, -40);
+    
+      // Create the empty list
+      particles = new ArrayList();
+      setupGl();
 }
-
-/* incoming osc message are forwarded to the oscEvent method. */
-// Here you can easily see the format of the OSC messages sent. For each user, the joints are named with 
-// the joint named followed by user ID (head0, neck0 .... r_foot0; head1, neck1.....)
-void oscEvent(OscMessage msg) {
-  if (msg.checkAddrPattern("/joint") && msg.checkTypetag("sifff")) {
-    // We have received joint coordinates, let's find out which skeleton/joint and save the values ;)
-    Integer id = msg.get(1).intValue();
-    Skeleton s = skels.get(id);
-    if (s == null) {
-      s = new Skeleton(id);
-      skels.put(id, s);
-    }
-    if (msg.get(0).stringValue().equals("head")) {
-      s.headCoords[0] = msg.get(2).floatValue();
-      s.headCoords[1] = msg.get(3).floatValue();
-      s.headCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("neck")) {
-      s.neckCoords[0] = msg.get(2).floatValue();
-      s.neckCoords[1] = msg.get(3).floatValue();
-      s.neckCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_collar")) {
-      s.rCollarCoords[0] = msg.get(2).floatValue();
-      s.rCollarCoords[1] = msg.get(3).floatValue();
-      s.rCollarCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_shoulder")) {
-      s.rShoulderCoords[0] = msg.get(2).floatValue();
-      s.rShoulderCoords[1] = msg.get(3).floatValue();
-      s.rShoulderCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_elbow")) {
-      s.rElbowCoords[0] = msg.get(2).floatValue();
-      s.rElbowCoords[1] = msg.get(3).floatValue();
-      s.rElbowCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_wrist")) {
-      s.rWristCoords[0] = msg.get(2).floatValue();
-      s.rWristCoords[1] = msg.get(3).floatValue();
-      s.rWristCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_hand")) {
-      s.rHandCoords[0] = msg.get(2).floatValue();
-      s.rHandCoords[1] = msg.get(3).floatValue();
-      s.rHandCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_finger")) {
-      s.rFingerCoords[0] = msg.get(2).floatValue();
-      s.rFingerCoords[1] = msg.get(3).floatValue();
-      s.rFingerCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_collar")) {
-      s.lCollarCoords[0] = msg.get(2).floatValue();
-      s.lCollarCoords[1] = msg.get(3).floatValue();
-      s.lCollarCoords[2] = msg.get(4).floatValue();
-    }  
-    else if (msg.get(0).stringValue().equals("l_shoulder")) {
-      s.lShoulderCoords[0] = msg.get(2).floatValue();
-      s.lShoulderCoords[1] = msg.get(3).floatValue();
-      s.lShoulderCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("l_elbow")) {
-      s.lElbowCoords[0] = msg.get(2).floatValue();
-      s.lElbowCoords[1] = msg.get(3).floatValue();
-      s.lElbowCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("l_wrist")) {
-      s.lWristCoords[0] = msg.get(2).floatValue();
-      s.lWristCoords[1] = msg.get(3).floatValue();
-      s.lWristCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("l_hand")) {
-      s.lHandCoords[0] = msg.get(2).floatValue();
-      s.lHandCoords[1] = msg.get(3).floatValue();
-      s.lHandCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("l_finger")) {
-      s.lFingerCoords[0] = msg.get(2).floatValue();
-      s.lFingerCoords[1] = msg.get(3).floatValue();
-      s.lFingerCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("torso")) {
-      s.torsoCoords[0] = msg.get(2).floatValue();
-      s.torsoCoords[1] = msg.get(3).floatValue();
-      s.torsoCoords[2] = msg.get(4).floatValue();
-    }
-    else if (msg.get(0).stringValue().equals("r_hip")) {
-      s.rHipCoords[0] = msg.get(2).floatValue();
-      s.rHipCoords[1] = msg.get(3).floatValue();
-      s.rHipCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("r_knee")) {
-      s.rKneeCoords[0] = msg.get(2).floatValue();
-      s.rKneeCoords[1] = msg.get(3).floatValue();
-      s.rKneeCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("r_ankle")) {
-      s.rAnkleCoords[0] = msg.get(2).floatValue();
-      s.rAnkleCoords[1] = msg.get(3).floatValue();
-      s.rAnkleCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("r_foot")) {
-      s.rFootCoords[0] = msg.get(2).floatValue();
-      s.rFootCoords[1] = msg.get(3).floatValue();
-      s.rFootCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("l_hip")) {
-      s.lHipCoords[0] = msg.get(2).floatValue();
-      s.lHipCoords[1] = msg.get(3).floatValue();
-      s.lHipCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("l_knee")) {
-      s.lKneeCoords[0] = msg.get(2).floatValue();
-      s.lKneeCoords[1] = msg.get(3).floatValue();
-      s.lKneeCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("l_ankle")) {
-      s.lAnkleCoords[0] = msg.get(2).floatValue();
-      s.lAnkleCoords[1] = msg.get(3).floatValue();
-      s.lAnkleCoords[2] = msg.get(4).floatValue();
-    } 
-    else if (msg.get(0).stringValue().equals("l_foot")) {
-      s.lFootCoords[0] = msg.get(2).floatValue();
-      s.lFootCoords[1] = msg.get(3).floatValue();
-      s.lFootCoords[2] = msg.get(4).floatValue();
-    } 
-  }
-  else if (msg.checkAddrPattern("/new_user") && msg.checkTypetag("i")) {
-    // A new user is in front of the kinect... Tell him to do the calibration pose!
-    println("New user with ID = " + msg.get(0).intValue());
-  }
-  else if(msg.checkAddrPattern("/new_skel") && msg.checkTypetag("i")) {
-    //New skeleton calibrated! Lets create it!
-    Integer id = msg.get(0).intValue();
-    Skeleton s = new Skeleton(id);
-    skels.put(id, s);
-  }
-  else if(msg.checkAddrPattern("/lost_user") && msg.checkTypetag("i")) {
-    //Lost user/skeleton
-    Integer id = msg.get(0).intValue();
-    println("Lost user " + id);
-    skels.remove(id);
-  }
-}
-
 
 void drawBone(float joint1[], float joint2[]) {
   if ((joint1[0] == -1 && joint1[1] == -1) || (joint2[0] == -1 && joint2[1] == -1))
@@ -212,12 +94,16 @@ void drawBone(float joint1[], float joint2[]) {
 
 void draw() {
   background(0);
+  drawGl();
+}
 
+void drawMain(){
   noStroke(); 
   for (Skeleton s: skels.values()) {
     s.addCollisionLine();
   
-    //Head
+    if(debug){
+      //Head
     ellipse(s.headCoords[0]*width, 
             s.headCoords[1]*height + 10, 
             ballSize*5, ballSize*6);
@@ -249,21 +135,61 @@ void draw() {
     drawBone(s.lHipCoords, s.lKneeCoords);
     drawBone(s.lKneeCoords, s.lFootCoords);
   //  drawBone(lFootCoords, rHipCoords);
+    }
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  anim.p.x = s.headCoords[0]*width;
-  anim.p.y = s.headCoords[1]*height;
-  
-   for (float j[]: s.allCoords) {
+//--
+    leg[0].j1 = new PVector(s.rHipCoords[0]*width,s.rHipCoords[1]*height);
+    leg[0].j2 = new PVector(s.rKneeCoords[0]*width,s.rKneeCoords[1]*height);
+    leg[1].j1 = leg[0].j2;
+    leg[1].j2 = new PVector(s.rFootCoords[0]*width,s.rFootCoords[1]*height);
+//--
+    leg[2].j1 = new PVector(s.lHipCoords[0]*width,s.lHipCoords[1]*height);
+    leg[2].j2 = new PVector(s.lKneeCoords[0]*width,s.lKneeCoords[1]*height);
+    leg[3].j1 = leg[2].j2;
+    leg[3].j2 = new PVector(s.lFootCoords[0]*width,s.lFootCoords[1]*height);
+//--
+    arm[0].j1 = new PVector(s.rShoulderCoords[0]*width,s.rShoulderCoords[1]*height);
+    arm[0].j2 = new PVector(s.rElbowCoords[0]*width,s.rElbowCoords[1]*height); 
+    arm[1].j1 = arm[0].j2;
+    arm[1].j2 = new PVector(s.rHandCoords[0]*width,s.rHandCoords[1]*height);
+//--
+    arm[2].j1 = new PVector(s.lShoulderCoords[0]*width,s.lShoulderCoords[1]*height);
+    arm[2].j2 = new PVector(s.lElbowCoords[0]*width,s.lElbowCoords[1]*height);
+    arm[3].j1 = arm[2].j2;
+    arm[3].j2 = new PVector(s.lHandCoords[0]*width,s.lHandCoords[1]*height);  
+
+//--
+    torso.j1 = new PVector(s.neckCoords[0]*width,s.neckCoords[1]*height);
+    torso.j2 = new PVector(s.torsoCoords[0]*width,50+s.torsoCoords[1]*height);
+//--
+    head.p = new PVector(s.headCoords[0]*width,s.headCoords[1]*height);
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   if(debug){
+     for (float j[]: s.allCoords) {
       ellipse(j[0]*width, j[1]*height, ballSize*2, ballSize*2);
-    }  
+    } 
+   } 
     s.body.createShape(s.edges);
   }
   
-   anim.frameNumber = int(trackVolume(13,75,2));
-  anim.run();
+  torso.run();
   
-  particles.add(new Particle(noise(noiseIter)*width,
-                             0,random(2,6)));
+  leg[0].run();
+  leg[2].run();
+  arm[0].run();
+  arm[2].run();
+
+  head.index = int(trackVolume(13,75,2));
+  //head.run();
+  leg[1].run();
+  leg[3].run();
+  arm[1].run();
+  arm[3].run();
+
+  //particles.add(new Particle(noise(noiseIter)*width,0,random(2,6)));
+  particles.add(new Particle(head.p.x,head.p.y,random(2,6)));
   noiseIter += 0.01;
   
   // We must always step through time!
@@ -293,7 +219,6 @@ void draw() {
     s.edges.restitution = 1.3; // How bouncy
   }
 }
-
 
 float trackVolume(float _scale, float _amp, float _floor) {
   float volumeLevel=0;  //must reset to 0 each frame before measuring
