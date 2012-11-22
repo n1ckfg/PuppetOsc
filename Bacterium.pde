@@ -19,6 +19,9 @@ class Bacterium extends AnimSprite{
    if(mousePressed){
      p = tween3D(p, new PVector(mouseX,mouseY,0), new PVector(random(10,100),random(10,100),10));
      t = new PVector(random(sW),random(sH),random(sD)-(sD/2));
+   }else if(dist(arm[1].j2.x,arm[1].j2.y,arm[3].j2.x,arm[3].j2.y)<tractorLimit){
+     p = tween3D(p, new PVector(head.p.x,head.p.y,0), new PVector(random(10,100),random(10,100),10));
+     t = new PVector(random(sW),random(sH),random(sD)-(sD/2));
    }else{
      p = tween3D(p, t, new PVector(random(10,100),random(10,100),10));
    }

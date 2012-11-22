@@ -1,0 +1,14 @@
+Stage Width
+800
+
+Stage Height
+600
+
+Framerate
+60
+
+OSC Receive Port
+61863
+
+Hand Trigger Distance
+100

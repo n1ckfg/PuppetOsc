@@ -9,6 +9,7 @@ import org.jbox2d.dynamics.*;
 int sW = 800;
 int sH = 600;
 int sD = 700;
+int fps = 60;
 
 boolean debug = false;
 boolean hideCursor = true;
@@ -28,6 +29,8 @@ AudioInput adc;
 
 int numBacteria = 100;
 Bacterium[] bacteria = new Bacterium[numBacteria];
+float tractorLimit = 100;
+
 
 AnimSprite head;
 
@@ -38,9 +41,11 @@ Torso torso;
 Hashtable<Integer, Skeleton> skels = new Hashtable<Integer, Skeleton>();
 
 void setup() {
+  Settings settings = new Settings("settings.txt");
   hint( ENABLE_OPENGL_4X_SMOOTH );
   if (hideCursor) noCursor();  
   size(sW, sH, GLConstants.GLGRAPHICS);    // use OPENGL rendering for bilinear filtering on texture
+  frameRate(fps);
   smooth();
   head = new AnimSprite("horsebuyer", 12);
   head.playing = false;

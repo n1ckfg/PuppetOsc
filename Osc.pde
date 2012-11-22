@@ -2,9 +2,10 @@ import oscP5.*;
 import netP5.*;
 
 OscP5 oscP5;
+int receivePort = 61863;
 
 void oscSetup(){
-      oscP5 = new OscP5(this, "127.0.0.1", 61863);
+      oscP5 = new OscP5(this, "127.0.0.1", receivePort);
 }
 
 /* incoming osc message are forwarded to the oscEvent method. */
